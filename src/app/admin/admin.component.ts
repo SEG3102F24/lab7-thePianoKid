@@ -1,23 +1,34 @@
-import {Component, inject, OnInit} from '@angular/core';
-import { AbstractControl, FormArray, FormBuilder, FormControl, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import {Author, Book} from '../books/model/book';
-import {BooksService} from '../books/service/books.service';
+import { Component, inject, OnInit } from '@angular/core';
+import {
+  AbstractControl,
+  FormArray,
+  FormBuilder,
+  FormControl,
+  Validators,
+  FormsModule,
+  ReactiveFormsModule,
+} from '@angular/forms';
+import { Book } from '../books/model/book';
+import { BooksService } from '../books/service/books.service';
 import { NgStyle, NgFor } from '@angular/common';
+import { Author } from '../authors/model/author';
 
-function categoryValidator(control: FormControl<string>): { [s: string]: boolean } | null {
+function categoryValidator(
+  control: FormControl<string>
+): { [s: string]: boolean } | null {
   const validCategories = ['Kids', 'Tech', 'Cook'];
   if (!validCategories.includes(control.value)) {
-    return {invalidCategory: true};
+    return { invalidCategory: true };
   }
   return null;
 }
 
 @Component({
-    selector: 'app-admin',
-    templateUrl: './admin.component.html',
-    styleUrls: ['./admin.component.css'],
-    standalone: true,
-    imports: [NgStyle, FormsModule, ReactiveFormsModule, NgFor]
+  selector: 'app-admin',
+  templateUrl: './admin.component.html',
+  styleUrls: ['./admin.component.css'],
+  standalone: true,
+  imports: [NgStyle, FormsModule, ReactiveFormsModule, NgFor],
 })
 export class AdminComponent implements OnInit {
   private builder: FormBuilder = inject(FormBuilder);
@@ -35,7 +46,7 @@ export class AdminComponent implements OnInit {
     cost: ['', [Validators.required, Validators.pattern('\\d+(\\.\\d{1,2})?')]],
     authors: this.builder.array([]),
     year: ['', Validators.required],
-    description: ['', Validators.required]
+    description: ['', Validators.required],
   });
 
   get category(): AbstractControl {
@@ -54,51 +65,56 @@ export class AdminComponent implements OnInit {
     return this.bookForm.get('authors') as FormArray;
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   showMessage(type: string, msg: string): void {
     this.msgStyle.color = type === 'error' ? 'red' : 'blue';
     this.message = msg;
     this.hideMsg = false;
-    setTimeout(
-      () => {
-        this.hideMsg = true;
-      }, 3000
-    );
+    setTimeout(() => {
+      this.hideMsg = true;
+    }, 3000);
   }
 
   onSubmit(): void {
-    const book = new Book(0,
+    const book = new Book(
+      0,
       <string>this.bookForm.value.category,
       <string>this.bookForm.value.title,
       Number(this.bookForm.value.cost),
       [],
       Number(this.bookForm.value.year),
-      <string>this.bookForm.value.description);
+      <string>this.bookForm.value.description
+    );
     const authors = <Author[]>this.bookForm.value.authors;
     this.booksService.addBook(book).subscribe({
       next: (response) => {
-        authors.forEach(
-          (author: Author) => {
-            this.booksService.getAuthorsNamed(author.firstName, author.lastName).subscribe({
-                next: (authorList: Author[]) => {
-                  if (authorList === undefined || authorList.length === 0) {
-                    this.booksService.addBookAuthor(response.id, author).subscribe();
-                  } else {
-                    // *** Assumes unique firstName/LastName for Authors
-                    this.booksService.updateBookAuthors(response.id, authorList[0].id).subscribe();
-                  }
+        authors.forEach((author: Author) => {
+          this.booksService
+            .getAuthorsNamed(author.firstName, author.lastName)
+            .subscribe({
+              next: (authorList: Author[]) => {
+                if (authorList === undefined || authorList.length === 0) {
+                  this.booksService
+                    .addBookAuthor(response.id, author)
+                    .subscribe();
+                } else {
+                  // *** Assumes unique firstName/LastName for Authors
+                  this.booksService
+                    .updateBookAuthors(response.id, authorList[0].id)
+                    .subscribe();
                 }
-              }
-            );
-          }
+              },
+            });
+        });
+        this.showMessage(
+          'info',
+          `The was successfully added with id ${response.id}`
         );
-        this.showMessage('info', `The was successfully added with id ${response.id}`);
       },
       error: (_: any) => {
         this.showMessage('error', 'Unable to add the book');
-      }
+      },
     });
     this.bookForm.reset();
     this.authors.clear();
@@ -108,7 +124,7 @@ export class AdminComponent implements OnInit {
     this.authors.push(
       this.builder.group({
         firstName: [''],
-        lastName: ['']
+        lastName: [''],
       })
     );
   }
